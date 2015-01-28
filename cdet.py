@@ -36,7 +36,6 @@ def preproc(image_head, preprocessed_img):
 
 	# Image gray-scale and thresholding
 	gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-	# ret, thresh = cv2.threshold(gray,15,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
 	thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
 										 cv2.THRESH_BINARY_INV, 91, 3)
 	# noise removal
@@ -68,9 +67,6 @@ def circle_detection(image_head, dil_img, circle_img):
 
 	# el is structuring element of specified (5,5) size. It's an ellipse inside a rectangle basically. 
 	el = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-
-	# Gaussian blur of the image to get rid of any remaining noise.
-	# image = cv2.GaussianBlur(image,(5,5),0)
 
 	# Bilateral blur should be even better:
 	blur = cv2.bilateralFilter(image,5,0,10)
@@ -159,29 +155,23 @@ def circle_detection(image_head, dil_img, circle_img):
 	    cv2.circle(drawing, center, radius, (0, 255, 0), 1)
 
 	cv2.imwrite(circle_img, drawing)
-	# print centers
-	# print drawing.shape
-	# print drawing
+
 	return drawing, centers
 
 def mean(image, size, step):
 	#Find a mask for the boundary rectangle
-	# width, height = cv2.GetSize(image)
+	
 	height, width = image.shape[:2]
 	mean = []
-	# norm = []
+	
 	x2 = size
 	y2 = size
-	# min = 1000
-	# max = 0
+	
 	while(x2<width):
 		while(y2<height):
 			mask = cv2.rectangle(image, (x2-size, y2-size), (x2,y2), 0)
 			value = cv2.mean(mask)[0]
 			mean.append(value)
-			# norm.append(cv2.cv.countNonZero(mask))
-			# if max<value: max = value;
-			# if min>value: min = value;
 			y2+= step
 		x2+= step
 		y2 = size
