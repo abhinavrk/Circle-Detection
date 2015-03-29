@@ -2,6 +2,11 @@ import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 
+'''
+Helper functions for batch.py
+Uses OpenCV 3.0.0
+'''
+
 def inverte(imagem, name):
 	'''
 	Performs a bitwise NOT to convert image to its negative. 
@@ -36,6 +41,7 @@ def preproc(image_head, preprocessed_img):
 
 	# Image gray-scale and thresholding
 	gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+	# ret, thresh = cv2.threshold(gray,15,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
 	thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
 										 cv2.THRESH_BINARY_INV, 91, 3)
 	# noise removal
@@ -67,6 +73,9 @@ def circle_detection(image_head, dil_img, circle_img):
 
 	# el is structuring element of specified (5,5) size. It's an ellipse inside a rectangle basically. 
 	el = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+
+	# Gaussian blur of the image to get rid of any remaining noise.
+	# image = cv2.GaussianBlur(image,(5,5),0)
 
 	# Bilateral blur should be even better:
 	blur = cv2.bilateralFilter(image,5,0,10)
@@ -147,7 +156,7 @@ def circle_detection(image_head, dil_img, circle_img):
 
 	# We were working with dilated circles, so actual radius has a multiplicative factor... 
 	# but +5 works just as well. 
-	radius = int(np.average(radii)) 
+	radius = int(np.average(radii))
 
 	# Draw center and circumference of circles onto the drawing.
 	for center in centers:
@@ -156,17 +165,22 @@ def circle_detection(image_head, dil_img, circle_img):
 
 	cv2.imwrite(circle_img, drawing)
 
-	return drawing, centers
+	#Normalize centers to have radius = 1
+	centers = np.array(centers)/float(radius)
+	return drawing, centers, radius
 
 def mean(image, size, step):
+	'''
+	Never used - here for completeness
+	pixel averaging via mean. 
+	'''
 	#Find a mask for the boundary rectangle
-	
+	# width, height = cv2.GetSize(image)
 	height, width = image.shape[:2]
 	mean = []
-	
 	x2 = size
 	y2 = size
-	
+
 	while(x2<width):
 		while(y2<height):
 			mask = cv2.rectangle(image, (x2-size, y2-size), (x2,y2), 0)
@@ -178,6 +192,9 @@ def mean(image, size, step):
 	return mean
 
 def hist(array, block, title, xlab, ylab):
+	'''
+	as in helper.py in checkin2 - gives histogram of array
+	'''
 	hist, bins = np.histogram(array, bins=block)
 	width = 0.7 * (bins[1] - bins[0])
 	center = (bins[:-1] + bins[1:]) / 2
@@ -185,13 +202,19 @@ def hist(array, block, title, xlab, ylab):
 	plt.title(title)
 	plt.xlabel(xlab)
 	plt.ylabel(ylab)
-	plt.show()
+	# plt.show()
 	return plt.bar(center, hist, align='center', width=width)
 
 def qsort(a, i):
-       return sorted(a, key = lambda arr: arr[i]) 
+	'''
+	Sorts data
+	'''
+    return sorted(a, key = lambda arr: arr[i]) 
 
 def search(a, pos, value_start, value_end):
+	'''
+	Searches data
+	'''
 	if len(a)<1:
 		return []
 
@@ -207,7 +230,10 @@ def search(a, pos, value_start, value_end):
 			return empty
 	return empty
 
-def density(arr, depth, width, points_d, points_w ):
+def density(arr, depth, width, points_d, points_w):
+	'''
+	density as in helper.py in checkin2
+	'''
 	# arr is a depth sorted array
 	# depth, width are the image dimension
 	# points_d, points_w are the number of points across depth and width.
@@ -225,3 +251,51 @@ def density(arr, depth, width, points_d, points_w ):
 			c = search(b, 1, widths[j], widths[j+1])
 			density.append(len(c))
 	return density
+
+def entropy(centers):
+	'''
+	entropy as in helper.py in checkin2
+	'''
+	dist = []
+	N = len(centers)
+	for i in range(N):
+		ind1 = np.random.randint(0,N)
+		ind2 = np.random.randint(0,N)
+		distance = (centers[ind1][0]-centers[ind2][0])**2 + (centers[ind1][1]-centers[ind2][1])**2
+		distance = distance**0.5
+		dist.append(distance)
+	norm = entropy = float(sum(dist))/float(len(dist))
+	entropy = np.std(dist)/norm
+	return dist, entropy
+
+def profile(arr, depth, j):
+	'''
+	profile as in helper.py in checkin2
+	'''
+	# arr is a depth sorted array
+	# depth/width is the profile direction
+	# points_d is the number of points across depth
+	profile = []
+	step = 3.
+	current = 0.
+	window = 10.
+	depths = []
+	while current+window<depth:
+		a = search(arr, j, current, current+window)
+		profile.append(len(a))
+		current += step
+		depths.append(current+window/2.)
+		
+	return depths, profile
+
+def interpol_list(list1):
+	'''
+	simple interpolate for values in list. Never used. 
+	'''
+	nl = []
+	for i in range(len(list1)-1):
+		val = (list1[i]+list1[i+1])/2.
+		nl.append(val)
+	return nl
+
+
